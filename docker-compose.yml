@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-secure_password_123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pismo_db}
+      MYSQL_USER: ${MYSQL_USER:-pismo_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-secure_password_123}
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$MYSQL_USER -p$MYSQL_PASSWORD || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - backend
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${SPRING_PORT:-8080}:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-pismo_db}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-pismo_user}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-secure_password_123}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+    - backend
+
+volumes:
+  mysql_data:
+
+
+networks:
+  backend:
+    driver: bridge
