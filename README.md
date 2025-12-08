@@ -32,8 +32,8 @@ Designed with Hexagonal Architecture, focusing on:
 
 # REST Endpoints
 ## 1. Create Account 
-    ## POST /accounts
-    ## Request
+## POST /accounts
+## Request
 ```json
   {
    "document_number": 12345678900
