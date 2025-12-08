@@ -4,8 +4,8 @@ import com.takeHome.Pismo.core.domain.port.in.AccountManagementPort;
 import com.takeHome.Pismo.core.domain.port.in.TransactionManagementPort;
 import com.takeHome.Pismo.core.domain.port.out.AccountPersistencePort;
 import com.takeHome.Pismo.core.domain.port.out.TransactionPersistencePort;
-import com.takeHome.Pismo.core.domain.usecase.AccountManagementUseCase;
-import com.takeHome.Pismo.core.domain.usecase.TransactionManagementUseCase;
+import com.takeHome.Pismo.core.usecase.AccountManagementUseCase;
+import com.takeHome.Pismo.core.usecase.TransactionManagementUseCase;
 import com.takeHome.Pismo.infrastructure.adapter.out.persistence.AccountPersistenceAdapter;
 import com.takeHome.Pismo.infrastructure.adapter.out.persistence.TransactionPersistenceAdapter;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,12 +33,6 @@ public class BeanConfigurationTest {
 
     @Mock
     private TransactionPersistencePort transactionPersistencePort;
-
-    @Mock
-    private TransactionManagementPort transactionManagementPort;
-
-    @Mock
-    private AccountManagementPort accountManagementPort;
 
     private BeanConfiguration configuration;
 

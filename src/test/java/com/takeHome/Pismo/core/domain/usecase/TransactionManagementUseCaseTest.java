@@ -5,6 +5,7 @@ import com.takeHome.Pismo.core.contract.output.TransactionResult;
 import com.takeHome.Pismo.core.domain.model.OperationType;
 import com.takeHome.Pismo.core.domain.model.Transaction;
 import com.takeHome.Pismo.core.domain.port.out.TransactionPersistencePort;
+import com.takeHome.Pismo.core.usecase.TransactionManagementUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

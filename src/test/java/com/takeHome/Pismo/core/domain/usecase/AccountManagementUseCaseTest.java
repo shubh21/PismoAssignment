@@ -7,6 +7,7 @@ import com.takeHome.Pismo.core.domain.model.Account;
 import com.takeHome.Pismo.core.domain.port.out.AccountPersistencePort;
 import com.takeHome.Pismo.core.exception.AccountNotFoundException;
 import com.takeHome.Pismo.core.exception.DuplicateDocumentNumberException;
+import com.takeHome.Pismo.core.usecase.AccountManagementUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

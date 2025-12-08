@@ -1,4 +1,4 @@
-package com.takeHome.Pismo.core.domain.usecase;
+package com.takeHome.Pismo.core.usecase;
 
 import com.takeHome.Pismo.core.contract.input.CreateAccountCommand;
 import com.takeHome.Pismo.core.contract.input.GetAccountByAccountIdQuery;
