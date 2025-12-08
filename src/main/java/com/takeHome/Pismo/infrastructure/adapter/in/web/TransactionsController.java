@@ -5,6 +5,8 @@ import com.takeHome.Pismo.core.contract.output.TransactionResult;
 import com.takeHome.Pismo.core.domain.port.in.TransactionManagementPort;
 import com.takeHome.Pismo.infrastructure.adapter.in.web.dto.CreateTransactionRequest;
 import com.takeHome.Pismo.infrastructure.adapter.in.web.dto.TransactionResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/transactions")
+@Tag(name = "Transactions")
 public class TransactionsController {
 
     private final TransactionManagementPort transactionManagementPort;
@@ -23,7 +26,9 @@ public class TransactionsController {
         this.transactionManagementPort = transactionManagementPort;
     }
 
+
     @PostMapping
+    @Operation(summary = "Create transaction", description = "Creates a transaction for an existing account")
     public ResponseEntity<TransactionResponse> transaction(@Valid @RequestBody CreateTransactionRequest request) {
 
         CreateTransactionCommand createTransactionCommand = CreateTransactionCommand.fromRequest(request);

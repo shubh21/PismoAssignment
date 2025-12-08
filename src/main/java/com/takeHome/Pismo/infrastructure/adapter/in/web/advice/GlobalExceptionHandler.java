@@ -73,7 +73,7 @@ public class GlobalExceptionHandler {
         return baseProblem(HttpStatus.NOT_FOUND, "Account not found", ex.getMessage(), request);
     }
 
-    @ExceptionHandler(exception = {DataAccessException.class, PersistenceException.class})
+    @ExceptionHandler(value = {DataAccessException.class, PersistenceException.class})
     public ProblemDetail handleDataAccess(DataAccessException ex, HttpServletRequest request) {
 
         return baseProblem(HttpStatus.INTERNAL_SERVER_ERROR, "Data Persistence Issue", ex.getMessage(), request);

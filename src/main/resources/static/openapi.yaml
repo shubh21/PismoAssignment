@@ -1,0 +1,329 @@
+openapi: 3.0.3
+info:
+  title: Pismo Account & Transaction Service
+  version: 1.0.0
+  description: |
+    A minimal Pismo-like service implementing account creation and financial transactions
+    using Hexagonal Architecture, Spring Boot, and MySQL.
+
+    ## Business Rules
+
+    - Accounts:
+      - Identified by `account_id`
+      - Created with a unique `document_number`
+
+    - Transactions:
+      - Each transaction belongs to an existing account.
+      - `operation_type_id`:
+        - 1 = CASH_PURCHASE        (amount stored as negative)
+        - 2 = INSTALLMENT_PURCHASE (amount stored as negative)
+        - 3 = WITHDRAWAL           (amount stored as negative)
+        - 4 = PAYMENT              (amount stored as positive)
+      - Clients must send `amount >= 0`.
+      - The service applies the sign rules internally.
+      - In responses, `amount` is returned with its final signed value.
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: Accounts
+    description: Account management operations
+  - name: Transactions
+    description: Transaction management operations
+
+paths:
+  /accounts:
+    post:
+      tags: [Accounts]
+      summary: Create a new account
+      description: |
+        Creates a new account using the provided `document_number`.
+
+        - `document_number` must be a positive integer.
+        - If the document number already exists, a 409 Conflict may be returned.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequest'
+            examples:
+              createAccount:
+                summary: Example account creation request
+                value:
+                  document_number: 12345678900
+      responses:
+        '201':
+          description: Account successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+              examples:
+                createdAccount:
+                  value:
+                    account_id: 1
+                    document_number: 12345678900
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          description: Account with the same document number already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Semantic validation failed (e.g. invalid document number)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /accounts/{accountId}:
+    get:
+      tags: [Accounts]
+      summary: Retrieve an account by ID
+      description: Returns account information for the given `accountId`.
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: Unique identifier of the account
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Account found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+              examples:
+                account:
+                  value:
+                    account_id: 1
+                    document_number: 12345678900
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /transactions:
+    post:
+      tags: [Transactions]
+      summary: Create a transaction
+      description: |
+        Creates a transaction associated with an existing account.
+
+        **Rules:**
+        - `account_id` must refer to an existing account.
+        - `operation_type_id`:
+          - 1 = CASH_PURCHASE        → amount stored as negative
+          - 2 = INSTALLMENT_PURCHASE → amount stored as negative
+          - 3 = WITHDRAWAL           → amount stored as negative
+          - 4 = PAYMENT              → amount stored as positive
+        - Client must send `amount >= 0`. The service will apply the correct sign.
+        - Response returns the persisted transaction with its final signed `amount`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+            examples:
+              cashPurchase:
+                summary: Cash Purchase (will be stored as negative)
+                value:
+                  account_id: 1
+                  operation_type_id: 1
+                  amount: 100.00
+              payment:
+                summary: Payment (stored as positive)
+                value:
+                  account_id: 1
+                  operation_type_id: 4
+                  amount: 50.25
+      responses:
+        '201':
+          description: Transaction successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+              examples:
+                createdTransaction:
+                  value:
+                    transaction_id: 10
+                    account_id: 1
+                    operationType_Id: 1
+                    amount: -100.00
+                    event_date: "2025-12-07T09:15:00.628748"
+        '400':
+          description: Invalid JSON or request structure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Referenced account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Semantic error (e.g., invalid operation type, negative amount)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+components:
+  schemas:
+    CreateAccountRequest:
+      type: object
+      required:
+        - document_number
+      properties:
+        document_number:
+          type: integer
+          format: int64
+          description: |
+            Unique document number for the account.
+            Must be positive.
+          example: 12345678900
+
+    AccountResponse:
+      type: object
+      required:
+        - account_id
+        - document_number
+      properties:
+        account_id:
+          type: integer
+          format: int64
+          example: 1
+        document_number:
+          type: integer
+          format: int64
+          example: 12345678900
+
+    CreateTransactionRequest:
+      type: object
+      required:
+        - account_id
+        - operation_type_id
+        - amount
+      properties:
+        account_id:
+          type: integer
+          format: int64
+          description: ID of the account that owns the transaction.
+          example: 1
+        operation_type_id:
+          type: integer
+          format: int32
+          description: |
+            Type of operation:
+            - 1 = CASH_PURCHASE
+            - 2 = INSTALLMENT_PURCHASE
+            - 3 = WITHDRAWAL
+            - 4 = PAYMENT
+          enum: [1, 2, 3, 4]
+          example: 2
+        amount:
+          type: number
+          format: double
+          description: |
+            Transaction amount **as sent by the client**.
+            Must be zero or positive. The service will apply the correct sign
+            based on the operation type before persisting.
+
+            Example:
+            - operation_type_id = 1 and amount = 100.00 → stored as -100.00
+            - operation_type_id = 4 and amount = 100.00 → stored as +100.00
+          example: 100.00
+          minimum: 0.0
+
+    TransactionResponse:
+      type: object
+      required:
+        - transaction_id
+        - account_id
+        - operationType_Id
+        - amount
+        - event_date
+      properties:
+        transaction_id:
+          type: integer
+          format: int64
+          example: 10
+        account_id:
+          type: integer
+          format: int64
+          example: 1
+        operationType_Id:
+          type: integer
+          format: int32
+          description: |
+            Type of operation:
+            - 1 = CASH_PURCHASE
+            - 2 = INSTALLMENT_PURCHASE
+            - 3 = WITHDRAWAL
+            - 4 = PAYMENT
+          enum: [1, 2, 3, 4]
+          example: 1
+        amount:
+          type: number
+          format: double
+          description: |
+            Signed, persisted amount.
+
+            Example:
+            - CASH_PURCHASE / INSTALLMENT_PURCHASE / WITHDRAWAL → negative
+            - PAYMENT → positive
+          example: -100.00
+        event_date:
+          type: string
+          format: date-time
+          description: Timestamp when the transaction was created.
+          example: "2025-12-07T09:15:00.628748"
+
+    ProblemDetail:
+      type: object
+      description: |
+        Standard RFC 7807 problem details object returned by the API
+        when an error occurs.
+      properties:
+        type:
+          type: string
+          format: uri
+          example: "about:blank"
+        title:
+          type: string
+          example: "Bad Request"
+        status:
+          type: integer
+          format: int32
+          example: 400
+        detail:
+          type: string
+          example: "Amount must be zero or positive"
+        instance:
+          type: string
+          format: uri
+          example: "/transactions"
+        # Optional extra properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-12-07T09:15:00Z"

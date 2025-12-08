@@ -9,12 +9,17 @@ import com.takeHome.Pismo.core.usecase.TransactionManagementUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
 import static com.takeHome.Pismo.core.Constants.INVALID_AMOUNT_VALUE_MSG;
+import static com.takeHome.Pismo.core.domain.model.OperationType.PAYMENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -41,18 +46,13 @@ class TransactionManagementUseCaseTest {
     }
 
     @Test
-    void givenValidCreateTransactionCommand_whenSaveTransactionCalled_thenTransactionIsPersistedAndResultReturned() {
+    void givenValidTransactionCommandForPaymentOpType_whenSaveTransactionCalled_thenTransactionIsPersistedWithCorrectAmount() {
         // Given
-        CreateTransactionCommand command = new CreateTransactionCommand(ACCOUNT_ID, OperationType.CASH_PURCHASE, AMOUNT);
+        CreateTransactionCommand command = new CreateTransactionCommand(ACCOUNT_ID, PAYMENT, AMOUNT);
 
         LocalDateTime persistedEventDate = LocalDateTime.now();
 
-        Transaction savedTransaction = new Transaction(
-                1L,
-                ACCOUNT_ID,
-                OPERATION_TYPE.getId(),
-                AMOUNT,
-                persistedEventDate
+        Transaction savedTransaction = new Transaction(1L, ACCOUNT_ID, OPERATION_TYPE.getId(), AMOUNT, persistedEventDate
         );
 
         when(transactionPersistencePort.save(any(Transaction.class))).thenReturn(savedTransaction);
@@ -67,11 +67,43 @@ class TransactionManagementUseCaseTest {
         Transaction captured = txCaptor.getValue();
         assertThat(captured.transactionId()).isNull();
         assertThat(captured.accountId()).isEqualTo(ACCOUNT_ID);
-        assertThat(captured.operationTypeId()).isEqualTo(OPERATION_TYPE.getId());
-        assertThat(captured.amount()).isEqualByComparingTo(AMOUNT.negate());
+        assertThat(captured.operationTypeId()).isEqualTo(PAYMENT.getId());
+        assertThat(captured.amount()).isEqualByComparingTo(AMOUNT);
         assertThat(captured.eventDate()).isNotNull();
 
         //verify result
+        assertThat(result.transactionId()).isEqualTo(savedTransaction.transactionId());
+        assertThat(result.accountId()).isEqualTo(savedTransaction.accountId());
+        assertThat(result.operationTypeId()).isEqualTo(savedTransaction.operationTypeId());
+        assertThat(result.amount()).isEqualByComparingTo(savedTransaction.amount());
+        assertThat(result.eventDate()).isEqualTo(savedTransaction.eventDate());
+    }
+
+    @ParameterizedTest
+    @EnumSource(names = {"CASH_PURCHASE", "INSTALLMENT_PURCHASE", "WITHDRAWAL"})
+    void givenValidTxCommandForPurchaseAndWithdrawalOpTypes_whenSaveTransactionCalled_thenTransactionIsPersistedWithSignedValues(OperationType operationType) {
+        // Given
+        CreateTransactionCommand command = new CreateTransactionCommand(ACCOUNT_ID, operationType, AMOUNT);
+
+        LocalDateTime persistedEventDate = LocalDateTime.now();
+
+        Transaction savedTransaction = new Transaction(1L, ACCOUNT_ID, operationType.getId(), AMOUNT, persistedEventDate);
+
+        when(transactionPersistencePort.save(any(Transaction.class))).thenReturn(savedTransaction);
+
+        // When
+        TransactionResult result = transactionManagementUseCase.saveTransaction(command);
+
+        ArgumentCaptor<Transaction> txCaptor = ArgumentCaptor.forClass(Transaction.class);
+        verify(transactionPersistencePort).save(txCaptor.capture());
+
+        Transaction captured = txCaptor.getValue();
+        assertThat(captured.transactionId()).isNull();
+        assertThat(captured.accountId()).isEqualTo(ACCOUNT_ID);
+        assertThat(captured.operationTypeId()).isEqualTo(operationType.getId());
+        assertThat(captured.amount()).isEqualByComparingTo(AMOUNT.negate());
+        assertThat(captured.eventDate()).isNotNull();
+
         assertThat(result.transactionId()).isEqualTo(savedTransaction.transactionId());
         assertThat(result.accountId()).isEqualTo(savedTransaction.accountId());
         assertThat(result.operationTypeId()).isEqualTo(savedTransaction.operationTypeId());

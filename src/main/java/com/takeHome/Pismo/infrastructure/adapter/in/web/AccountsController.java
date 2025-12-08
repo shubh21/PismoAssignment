@@ -6,6 +6,8 @@ import com.takeHome.Pismo.core.contract.output.AccountResult;
 import com.takeHome.Pismo.core.domain.port.in.AccountManagementPort;
 import com.takeHome.Pismo.infrastructure.adapter.in.web.dto.AccountResponse;
 import com.takeHome.Pismo.infrastructure.adapter.in.web.dto.CreateAccountRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/accounts")
+@Tag(name = "Accounts")
 public class AccountsController {
 
     private final AccountManagementPort accountManagementPort;
@@ -26,6 +29,7 @@ public class AccountsController {
     }
 
     @PostMapping
+    @Operation(summary = "Create account", description = "Creates an account using the given document number.")
     public ResponseEntity<AccountResponse> create(@RequestBody CreateAccountRequest request){
         CreateAccountCommand createAccountCommand = new CreateAccountCommand(request.documentNumber());
 
@@ -37,6 +41,7 @@ public class AccountsController {
     }
 
     @GetMapping("/{account_id}")
+    @Operation(summary = "Retrieve account by ID")
     public ResponseEntity<AccountResponse> retrieve(@PathVariable("account_id") long accountId){
 
         GetAccountByAccountIdQuery accountQuery = new GetAccountByAccountIdQuery(accountId);

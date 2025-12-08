@@ -5,53 +5,57 @@ import com.takeHome.Pismo.core.contract.input.GetAccountByAccountIdQuery;
 import com.takeHome.Pismo.core.contract.output.AccountResult;
 import com.takeHome.Pismo.core.domain.port.in.AccountManagementPort;
 import com.takeHome.Pismo.core.exception.AccountNotFoundException;
+import com.takeHome.Pismo.infrastructure.adapter.in.web.advice.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
-import javax.sql.DataSource;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.stream.Stream;
-
 import static com.takeHome.Pismo.core.Constants.INVALID_ACCOUNT_ID_MSG;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.openMocks;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(AccountsController.class)
+
 public class AccountControllerTest {
 
     private static final long DOCUMENT_NUMBER = 12345678900L;
     private static final long ACCOUNT_ID = 1L;
 
-    @MockitoBean
+    @Mock
     AccountManagementPort accountManagementPort;
-
-    @MockitoBean
-    DataSource dataSource;
 
     @Autowired
     private MockMvc mockMvc;
 
+    @InjectMocks
     AccountsController accountsController;
 
     @BeforeEach
     void setup(){
-        accountsController = new AccountsController(accountManagementPort);
+        openMocks(this);
+        GlobalExceptionHandler globalExceptionHandler = new GlobalExceptionHandler();
+
+        mockMvc = MockMvcBuilders.standaloneSetup(accountsController)
+                .setControllerAdvice(globalExceptionHandler)
+                .build();
     }
 
     @Test
@@ -63,7 +67,7 @@ public class AccountControllerTest {
         when(accountManagementPort.saveAccount(any(CreateAccountCommand.class))).thenReturn(accountResult);
 
         String json = String.format("{\"document_number\": %s}", DOCUMENT_NUMBER);
-
+        ArgumentCaptor<CreateAccountCommand> captor = ArgumentCaptor.forClass(CreateAccountCommand.class);
         //when-then
         mockMvc.perform(post("/accounts")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -73,14 +77,13 @@ public class AccountControllerTest {
                 .andExpect(jsonPath("$.account_id").value(ACCOUNT_ID))
                 .andExpect(jsonPath("$.document_number").value(DOCUMENT_NUMBER));
 
-        ArgumentCaptor<CreateAccountCommand> captor = ArgumentCaptor.forClass(CreateAccountCommand.class);
         verify(accountManagementPort).saveAccount(captor.capture());
+        assertThat(captor.getValue().documentNumber()).isEqualTo(DOCUMENT_NUMBER);
     }
 
     @ParameterizedTest(name = "Should return 400 when document number is invalid")
     @MethodSource("invalidDocumentProvider")
-    void givenInvalidDocumentNumber_whenCreateAccountRequested_thenReturnBadRequest(
-                                                                                    String jsonValue) throws Exception {
+    void givenInvalidDocumentNumber_whenCreateAccountRequested_thenReturnBadRequest(String jsonValue) throws Exception {
         //given
         String json = String.format("{\"document_number\": %s}", jsonValue);
 
@@ -126,6 +129,7 @@ public class AccountControllerTest {
 
         ArgumentCaptor<GetAccountByAccountIdQuery> captor = ArgumentCaptor.forClass(GetAccountByAccountIdQuery.class);
         verify(accountManagementPort).retrieveAccount(captor.capture());
+        assertThat(captor.getValue().accountId()).isEqualTo(accountId);
     }
 
     @Test
@@ -146,6 +150,7 @@ public class AccountControllerTest {
 
         ArgumentCaptor<GetAccountByAccountIdQuery> captor = ArgumentCaptor.forClass(GetAccountByAccountIdQuery.class);
         verify(accountManagementPort).retrieveAccount(captor.capture());
+        assertThat(captor.getValue().accountId()).isEqualTo(accountId);
     }
 
     @Test

@@ -2,15 +2,13 @@ package com.takeHome.Pismo.core.usecase;
 
 import com.takeHome.Pismo.core.contract.input.CreateTransactionCommand;
 import com.takeHome.Pismo.core.contract.output.TransactionResult;
+import com.takeHome.Pismo.core.domain.model.OperationType;
 import com.takeHome.Pismo.core.domain.model.Transaction;
 import com.takeHome.Pismo.core.domain.port.in.TransactionManagementPort;
 import com.takeHome.Pismo.core.domain.port.out.TransactionPersistencePort;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
-
-import static com.takeHome.Pismo.core.Constants.INVALID_OPERATION_ID_MSG;
 
 public class TransactionManagementUseCase implements TransactionManagementPort {
 
@@ -22,12 +20,11 @@ public class TransactionManagementUseCase implements TransactionManagementPort {
 
     @Override
     public TransactionResult saveTransaction(CreateTransactionCommand createTransactionCommand) {
-        int opTypeId = createTransactionCommand.operationType().getId();
 
         Transaction transaction = Transaction.builder()
                 .accountId(createTransactionCommand.accountId())
-                .operationTypeId(opTypeId)
-                .amount(applySignRule(opTypeId, createTransactionCommand.amount()))
+                .operationTypeId(createTransactionCommand.operationType().getId())
+                .amount(applySignRule(createTransactionCommand.operationType(), createTransactionCommand.amount()))
                 .eventDate(LocalDateTime.now())
                 .build();
 
@@ -36,13 +33,12 @@ public class TransactionManagementUseCase implements TransactionManagementPort {
         return mapToTransactionResult(savedTransaction);
     }
 
-    private BigDecimal applySignRule(int operationTypeId, BigDecimal amount) {
-        BigDecimal formattedAmount = amount.setScale(2, RoundingMode.HALF_UP);
+    private BigDecimal applySignRule(OperationType operationType, BigDecimal amount) {
 
-        return switch (operationTypeId) {
-            case 1, 2, 3 -> formattedAmount.compareTo(BigDecimal.ZERO)>0 ? formattedAmount.negate():formattedAmount; //purchase and withdrawal
-            case 4 -> formattedAmount.compareTo(BigDecimal.ZERO)<0 ? formattedAmount.negate() : formattedAmount;    // PAYMENT
-            default -> throw new IllegalArgumentException(INVALID_OPERATION_ID_MSG.formatted(operationTypeId));
+        return switch (operationType) {
+            case CASH_PURCHASE,WITHDRAWAL, INSTALLMENT_PURCHASE ->
+                    amount.compareTo(BigDecimal.ZERO)>0 ? amount.negate():amount;
+            case PAYMENT -> amount.compareTo(BigDecimal.ZERO)<0 ? amount.negate() : amount;
         };
     }
 
