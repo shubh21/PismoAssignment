@@ -4,21 +4,26 @@ import com.takeHome.Pismo.core.domain.model.BalanceBearingTransaction;
 import com.takeHome.Pismo.core.domain.model.TransactionDischargeResult;
 import com.takeHome.Pismo.core.domain.port.in.BalanceDischargePort;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class BalanceDischargeUseCase implements BalanceDischargePort {
 
     @Override
     public TransactionDischargeResult discharge(BalanceBearingTransaction paymentTransaction, List<? extends BalanceBearingTransaction> openDebits) {
 
-        if(!paymentTransaction.isPayment()){
+        if(Objects.isNull(paymentTransaction)|| Objects.isNull(openDebits) || !paymentTransaction.isPayment()){
             throw new IllegalArgumentException("Invalid discharge operation");
         }
+        List<BalanceBearingTransaction> mutableDebits = openDebits.stream()
+                .sorted(Comparator.comparing(tx -> tx.transaction().eventDate(),
+                Comparator.nullsLast(Comparator.naturalOrder())))
+                .collect(Collectors.toList());
 
-        openDebits.sort(Comparator.comparing((BalanceBearingTransaction tx) -> tx.transaction().eventDate()));
-
-        for (BalanceBearingTransaction debit : openDebits) {
+        for (BalanceBearingTransaction debit : mutableDebits) {
 
             BigDecimal paymentBalance = paymentTransaction.balance();
 
@@ -33,6 +38,6 @@ public class BalanceDischargeUseCase implements BalanceDischargePort {
             debit.applyPayment(amountToApply);
             paymentTransaction.applyPayment(amountToApply.negate());
         }
-        return new TransactionDischargeResult(paymentTransaction, openDebits);
+        return new TransactionDischargeResult(paymentTransaction, mutableDebits);
     }
 }
