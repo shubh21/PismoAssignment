@@ -5,5 +5,5 @@ import com.takeHome.Pismo.core.contract.input.CreateTransactionCommand;
 import com.takeHome.Pismo.core.contract.output.TransactionResult;
 
 public interface TransactionManagementPort {
-    TransactionResult saveTransaction(CreateTransactionCommand createTransactionCommand);
+    TransactionResult saveTransactionAndDischargeDebitBalances(CreateTransactionCommand createTransactionCommand);
 }
