@@ -65,7 +65,7 @@ public class TransactionControllerTest {
                 .amount(amount)
                 .build();
 
-        when(transactionManagementPort.saveTransaction(any(CreateTransactionCommand.class))).thenReturn(mockTransaction);
+        when(transactionManagementPort.saveTransactionAndDischargeDebitBalances(any(CreateTransactionCommand.class))).thenReturn(mockTransaction);
         // When-then
         mockMvc.perform(post("/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -75,7 +75,7 @@ public class TransactionControllerTest {
                 .andExpect(jsonPath("$.amount").value(amount));
 
         ArgumentCaptor<CreateTransactionCommand> argumentCaptor = ArgumentCaptor.forClass(CreateTransactionCommand.class);
-        verify(transactionManagementPort).saveTransaction(argumentCaptor.capture());
+        verify(transactionManagementPort).saveTransactionAndDischargeDebitBalances(argumentCaptor.capture());
         assertThat(argumentCaptor.getValue().accountId()).isEqualTo(accountId);
         assertThat(argumentCaptor.getValue().amount()).isEqualTo(amount);
         assertThat(argumentCaptor.getValue().operationType().getId()).isEqualTo(opTypeId);
@@ -92,7 +92,7 @@ public class TransactionControllerTest {
                 .amount(BigDecimal.valueOf(100.00))
                 .build();
 
-        when(transactionManagementPort.saveTransaction(any(CreateTransactionCommand.class)))
+        when(transactionManagementPort.saveTransactionAndDischargeDebitBalances(any(CreateTransactionCommand.class)))
                 .thenReturn(mockTransaction);
 
         // When - Then

@@ -8,13 +8,12 @@ import static com.takeHome.Pismo.core.Constants.INVALID_ACCOUNT_ID_MSG;
 import static com.takeHome.Pismo.core.Constants.INVALID_AMOUNT_VALUE_MSG;
 import static com.takeHome.Pismo.core.Constants.INVALID_TRANSACTION_ID_MSG;
 
-public record Transaction(
-        Long transactionId,
+public record Transaction( Long transactionId,
         Long accountId,
         int operationTypeId,
         BigDecimal amount,
-        LocalDateTime eventDate
-) {
+        LocalDateTime eventDate){
+
     public Transaction(Long transactionId, Long accountId, int operationTypeId, BigDecimal amount, LocalDateTime eventDate) {
         validateTransactionId(transactionId);
         validateAccountId(accountId);

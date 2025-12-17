@@ -26,17 +26,17 @@ public class TransactionsController {
         this.transactionManagementPort = transactionManagementPort;
     }
 
-
     @PostMapping
     @Operation(summary = "Create transaction", description = "Creates a transaction for an existing account")
     public ResponseEntity<TransactionResponse> transaction(@Valid @RequestBody CreateTransactionRequest request) {
 
         CreateTransactionCommand createTransactionCommand = CreateTransactionCommand.fromRequest(request);
 
-        TransactionResult transactionResult = transactionManagementPort.saveTransaction(createTransactionCommand);
+        TransactionResult transactionResult = transactionManagementPort.saveTransactionAndDischargeDebitBalances(createTransactionCommand);
 
         TransactionResponse transactionResponse = WebResponseMapper.toTransactionResponse(transactionResult);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(transactionResponse);
     }
+
 }

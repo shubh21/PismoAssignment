@@ -1,7 +1,9 @@
 package com.takeHome.Pismo.infrastructure.adapter.out.persistence;
 
+import com.takeHome.Pismo.core.domain.model.ExecutableTransaction;
 import com.takeHome.Pismo.core.domain.model.Transaction;
 import com.takeHome.Pismo.core.exception.PersistenceException;
+import com.takeHome.Pismo.infrastructure.adapter.out.persistence.mapper.TransactionPersistenceMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,11 +27,14 @@ public class TransactionPersistenceAdapterTest {
     @Mock
     JdbcTemplate jdbcTemplate;
 
+    @Mock
+    TransactionPersistenceMapper transactionPersistenceMapper;
+
     TransactionPersistenceAdapter adapter;
 
     @BeforeEach
     void setup(){
-        adapter = new TransactionPersistenceAdapter(jdbcTemplate);
+        adapter = new TransactionPersistenceAdapter(jdbcTemplate, transactionPersistenceMapper);
     }
 
     @Test
@@ -44,8 +49,9 @@ public class TransactionPersistenceAdapterTest {
                 .eventDate(LocalDateTime.now())
                 .build();
 
+
         // When - Then
-        assertThatThrownBy(() -> adapter.save(tx))
+        assertThatThrownBy(() -> adapter.save(ExecutableTransaction.from(tx)))
                 .isInstanceOf(PersistenceException.class)
                 .hasMessage(KEY_GENERATION_ERROR_MSG.formatted("transaction"));
 

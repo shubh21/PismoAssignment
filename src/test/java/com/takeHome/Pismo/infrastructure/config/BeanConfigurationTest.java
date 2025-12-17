@@ -1,6 +1,7 @@
 package com.takeHome.Pismo.infrastructure.config;
 
 import com.takeHome.Pismo.core.domain.port.in.AccountManagementPort;
+import com.takeHome.Pismo.core.domain.port.in.BalanceDischargePort;
 import com.takeHome.Pismo.core.domain.port.in.TransactionManagementPort;
 import com.takeHome.Pismo.core.domain.port.out.AccountPersistencePort;
 import com.takeHome.Pismo.core.domain.port.out.TransactionPersistencePort;
@@ -8,6 +9,7 @@ import com.takeHome.Pismo.core.usecase.AccountManagementUseCase;
 import com.takeHome.Pismo.core.usecase.TransactionManagementUseCase;
 import com.takeHome.Pismo.infrastructure.adapter.out.persistence.AccountPersistenceAdapter;
 import com.takeHome.Pismo.infrastructure.adapter.out.persistence.TransactionPersistenceAdapter;
+import com.takeHome.Pismo.infrastructure.adapter.out.persistence.mapper.TransactionPersistenceMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +35,12 @@ public class BeanConfigurationTest {
 
     @Mock
     private TransactionPersistencePort transactionPersistencePort;
+
+    @Mock
+    private BalanceDischargePort balanceDischargePort;
+
+    @Mock
+    private TransactionPersistenceMapper transactionPersistenceMapper;
 
     private BeanConfiguration configuration;
 
@@ -67,7 +75,7 @@ public class BeanConfigurationTest {
     @Test
     void givenJdbcTemplate_whenTransactionPersistencePortBeanCreated_thenTransactionPersistenceAdapterIsReturned() {
 
-        TransactionPersistencePort port = configuration.transactionPersistencePort(jdbcTemplate);
+        TransactionPersistencePort port = configuration.transactionPersistencePort(jdbcTemplate, transactionPersistenceMapper);
 
         // Then
         assertThat(port).isNotNull();
@@ -85,10 +93,20 @@ public class BeanConfigurationTest {
     }
 
     @Test
+    void assertBalanceDischargePortBeanIsNotNull(){
+        //When
+        BalanceDischargePort balanceDischargePort = configuration.balanceDischargePort();
+
+        //Then
+        assertThat(balanceDischargePort).isNotNull();
+        assertThat(balanceDischargePort).isInstanceOf(BalanceDischargePort.class);
+    }
+
+    @Test
     void givenTransactionPersistencePort_whenTransactionManagementPortBeanCreated_thenTransactionManagementUseCaseIsReturned() {
 
         // When
-        TransactionManagementPort port = configuration.transactionManagementPort(transactionPersistencePort);
+        TransactionManagementPort port = configuration.transactionManagementPort(transactionPersistencePort, balanceDischargePort);
 
         // Then
         assertThat(port).isNotNull();
