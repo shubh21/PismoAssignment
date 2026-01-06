@@ -1,4 +1,4 @@
-# Pismo Mini Account & Transaction Service
+# Mini Account & Transaction Service
 
 A clean, hexagonal-architecture-based Spring Boot service supporting account creation and financial transactions with proper domain validations and MySQL persistence.
 
